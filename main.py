@@ -1,7 +1,7 @@
 from tkinter import *
 from tkinter import filedialog,messagebox,font
 from configparser import ConfigParser
-import json, random, os, time, threading, sys, wmi, pythoncom, csv
+import json, random, os, time, threading, sys, wmi
 import getpass
 
 DEBUG = False
