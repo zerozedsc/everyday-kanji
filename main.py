@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import filedialog,messagebox,font
 from configparser import ConfigParser
 import json, random, os, time, threading, sys, wmi
-import getpass
+import getpass, traceback, pythoncom
 
 DEBUG = False
 USER_NAME = getpass.getuser()
@@ -20,7 +20,7 @@ class GUI():
         self.get_timer = ""
         self.kanji_data = []
         self.counter = 1
-        self._run, self._options = True, True
+        self._run, self._options, self._skip = True, True, True
         self._exe = False
 
         #CHECK FILE AT STARTUP
@@ -87,13 +87,18 @@ class GUI():
         def checkOptions(*args):
             if self._options:
                 self.options()
+
         self.option = Label(master=self.window, text="option?",font=("Arial-BoldMT",int(10.0)), bg="#3A7FF6",fg="white", cursor="hand2")
         self.option.place(x=27,y=450)
         self.option.bind('<Button-1>', checkOptions)
 
+        def skipKanji(*args):
+            if self._skip:
+                self.showInfoKanji()
+
         self.skip_kanji = Label(master=self.window, text="skip",font=("Arial-BoldMT",int(10.0)), bg="#3A7FF6",fg="white", cursor="hand2")
         self.skip_kanji.place(x=100,y=450)
-        self.skip_kanji.bind('<Button-1>', self.showInfoKanji)
+        self.skip_kanji.bind('<Button-1>', skipKanji)
 
 
 
@@ -124,6 +129,8 @@ class GUI():
         with open('config.ini', 'w') as conf:
             self.config.write(conf)
             conf.close()
+
+        #Instruction Window
 
         #RUN TERMINATING SCRIPT
         if not DEBUG:
@@ -158,6 +165,16 @@ class GUI():
             self.get_timer = f"{self.h}m : {round(((float(self.s)+float(self.m)*60)/60),2)}s"
 
     def showInfoKanji(self,*args):
+        #DISABLE Button
+        self._options, self._skip = False, False
+        self.kakunin_btn.config(state="disabled")
+
+        self.skip_kanji.bind('<Button-1>', None)
+        self.skip_kanji.update()
+        self.option.bind('<Button-1>', None)
+        self.option.update()
+        self.kakunin_btn.config(state="disabled")
+
         self.window_info = Toplevel(master=self.window)
         self.window_info.title("Kanji INFO")
         self.window_info.geometry("862x519")
@@ -261,6 +278,8 @@ class GUI():
 
         #NEXT Button
         def next():
+            self._options, self._skip = True, True
+            self.kakunin_btn.config(state="normal")
             self.on_entry.delete(0, 'end')
             self.kun_entry.delete(0, 'end')
             self.imi_entry.delete(0, 'end')
@@ -424,37 +443,45 @@ class GUI():
 
     def inStartup(self):
         startup_path = r'C:\Users\%s\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup' % USER_NAME
-        if not self._exe:
-            #THIS BAT FILE WILL SAVE AT STARTUP
-            #TESTING PURPOSE ONLY, WHEN EXE FILE DONE, THIS WILL NOT BE USE
-            startup_name = "mainichi_start.bat"
-            if not os.path.exists(os.path.abspath(f"{startup_path}\{startup_name}")):
-                file_path = os.path.dirname(os.path.realpath("main.py"))
-                bat_code = f'''cd /\ncd /d {file_path}\npython.exe main.py'''
 
-                with open(startup_path + '\\' + startup_name , "w+") as bat_file:
-                    bat_file.write(r'%s' % f"{bat_code}")
-                    bat_file.close()
-            else:
-                print(f"{startup_path}\{startup_name} >>> exists")
+        if not DEBUG:
+            if not self._exe :
+                #THIS BAT FILE WILL SAVE AT STARTUP
+                #TESTING PURPOSE ONLY, WHEN EXE FILE DONE, THIS WILL NOT BE USE
+                startup_name = "mainichi_start.bat"
+                if not os.path.exists(os.path.abspath(f"{startup_path}\{startup_name}")):
+                    file_path = os.path.dirname(os.path.realpath("main.py"))
+                    bat_code = f'''cd /\ncd /d {file_path}\npython.exe main.py'''
 
-        else:
-            #FOR EXE FILE
-            #PLEASE MAKE self._exe = True to create exe file to startup
-            startup_name = "mainichi-kanji-kakunin.exe"
-            exe_file = "PUT YOUR EXE NAME HERE"
-            if not os.path.exists(os.path.abspath(f"{startup_path}\{startup_name}")):
-                file_path = os.path.dirname(os.path.realpath(exe_file))
-                from pyshortcuts import make_shortcut
-                make_shortcut(file_path, name=startup_name,folder=startup_path)
+                    with open(startup_path + '\\' + startup_name , "w+") as bat_file:
+                        bat_file.write(r'%s' % f"{bat_code}")
+                        bat_file.close()
+                else:
+                    print(f"{startup_path}\{startup_name} >>> exists")
+
             else:
-                print(f"{startup_path}\{startup_name} >>> exists")
-            pass
+                #FOR EXE FILE
+                #PLEASE MAKE self._exe = True to create exe file to startup
+                startup_name = "mainichi-kanji-kakunin.exe"
+                exe_file = "mainichi.exe"
+                if not os.path.exists(os.path.abspath(f"{startup_path}\{startup_name}")):
+                    file_path = os.path.dirname(os.path.realpath(exe_file))
+                    from pyshortcuts import make_shortcut
+                    make_shortcut(file_path, name=startup_name,folder=startup_path)
+                else:
+                    print(f"{startup_path}\{startup_name} >>> exists")
+                pass
+
+
 
         #NEXT TIME MAYBE I WILL CONSIDER PUT IN REG
         #FOR NOW JUST IN STARTUP FOLDER
 
 
 if __name__ == "__main__":
-    window = Tk()
-    GUI(window)
+    try:
+        window = Tk()
+        GUI(window)
+    except Exception as e:
+        with open("ERROR LOG.txt", "w") as log:
+            log.write(f"{e}\n{traceback.format_exc()}")
