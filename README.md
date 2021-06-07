@@ -3,10 +3,13 @@
 A tkinter based app that helps japanese learner to remember kanji
 
 ## How it works?
-Based on my reading, people said that if we want to remember something we always need to look and read it. For japanese learner, kanji is one of the hardest part in learning japanese. It is because, japanese use 3 style of writing which is Hiragana, Katakana and Kanji. Kanji very important because, you will need to use it everyday in your life if you live at japan.
+Based on my reading, people said that if we want to remember something we always need to look and read it. For japanese learner, kanji is one of the hardest part in learning japanese. It is because, japanese use 3 style of writing which is Hiragana, Katakana and Kanji. Kanji very important because, you will need to use it everyday in your life if you want to live at japan.
 
-Nowadays, people always use the computer for online class and work from home, so This App will help user to see and read Kanji **EVERYDAY**
+Nowadays, people always use the computer for online class and work from home, so This App will help user to see and read Kanji **EVERYDAY**.
 
+And to gain more focus when looking and reading kanji, this app will 
+**CLOSE OTHER WINDOW UNTIL YOU SOLVE THE QUIZ, YOUR FUKUSHU** 
+except windows explorer(only this i know for now)
 
 ## Kanji Data
 
