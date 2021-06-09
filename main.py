@@ -35,18 +35,18 @@ class GUI():
         self.config = ConfigParser()
         self.config.read("config.ini")
         self.kanji_config = self.config["Option"]
-        self.repeat_count = self.kanji_config["mainichi_count"]
+        self.FIX_N = self.kanji_config["mainichi_count"]
+        if self.FIX_N == "0":
+            self.FIX_N = random.randint(1, 20)
+
         self.setup_jlpt = [k for k in self.kanji_config["jlpt"].split(",")]
-        self.setup_stroke = str(self.kanji_config["strokes"])
+        self.setup_stroke = [k for k in self.kanji_config["strokes"].split(",")]
         self.startup_check = bool(self.config["Run"]["startup"])
 
         self.inStartup()
 
-        if DEBUG:
-            self.FIX_N = 2
-        else:
+        if not DEBUG:
             self.window.protocol("WM_DELETE_WINDOW", self.__callback)
-            self.FIX_N = self.config["Option"]["mainichi_count"]
 
         #RUN SPLASH splashScreen
         self.splashScreen()
@@ -73,12 +73,12 @@ class GUI():
 
 
         canvas.create_text(548.5,154.0,text="訓読み(hiragana)",fill="#515486",font=("Arial-BoldMT",int(13.0)))
-        canvas.create_text(548.5,232.5,text="音読み(katakana)",fill="#515486",font=("Arial-BoldMT",int(13.0)))
-        canvas.create_text(558.5,312.5,text="意味(English/Malay)",fill="#515486",font=("Arial-BoldMT",int(13.0)))
+        canvas.create_text(548.5,232.5,text="音読み(hiragana)",fill="#515486",font=("Arial-BoldMT",int(13.0)))
+        canvas.create_text(558.5,312.5,text="意味(English/英語)",fill="#515486",font=("Arial-BoldMT",int(13.0)))
         canvas.create_text(646.5,426.5,text="確認",fill="#FFFFFF",font=("Arial-BoldMT",int(13.0)))
         canvas.create_text(573.5,88.0,text="答え?",fill="#515486",font=("Arial-BoldMT",int(22.0)))
 
-        title = Label(master=self.window, text="毎日漢字", bg="#3A7FF6",fg="white",font=("Arial-BoldMT",int(30.0)))
+        title = Label(master=self.window, text="毎日漢字", bg="#3A7FF6",fg="white",font=("Arial-BoldMT",int(35.0)))
         title.place(x=27.0,y=100.0)
 
         self.counter_label = Label(master=self.window, text=f"1/{self.FIX_N}", bg="#3A7FF6",fg="white",font=("Times New Roman",int(20.0)))
@@ -131,11 +131,21 @@ class GUI():
             conf.close()
 
         #Instruction Window
-
         #RUN TERMINATING SCRIPT
         if not DEBUG:
             self.run_check = threading.Thread(target=self.checkAppBg)
             self.run_check.start()
+
+        splash = Toplevel(self.window)
+        txt_intro = f'''WELCOME TO MAINICHI KANJI KAKUNIN,
+This app is for who having a problem and want to find a way to memorize kanji.
+THIS APP STILL IN DEVELOPING,
+SO A LOT OF PROBLEM WILL OCCUR.
+Feel Free to contact me for some improvement or issue for me to fix it.
+楽しみ練習しましょう。。頑張れ'''
+        Label(master=splash, text=txt_intro, bg="#3A7FF6",fg="white",font=("Arial-BoldMT",int(15.5))).grid()
+
+        splash.after(5000, lambda:splash.destroy())
 
     def timer_func(self):
         if self.option_pane is not None:
@@ -336,17 +346,22 @@ class GUI():
 
             else:
                 #GET KANJI DATA
+                ALL = "ALL"
                 self.get_kanji = self.kanji[self.rand_choice]
                 self.get_data_kanji = self.test_load[self.kanji[self.rand_choice]]
                 self.stroke = str(self.get_data_kanji["strokes"])
                 self.jlpt = "n" + str(self.get_data_kanji["jlpt_new"])
+                # print(f"{self.jlpt},{self.setup_jlpt} >{(self.jlpt in self.setup_jlpt) or (ALL in self.setup_jlpt)}")
 
-                if (self.stroke == self.setup_stroke or self.setup_stroke == "0") and (self.jlpt in self.setup_jlpt):
+                if ((self.setup_stroke[1] != 0) and (int(self.stroke) in range(int(self.setup_stroke[0]),int(self.setup_stroke[1]))) or \
+                (self.stroke == self.setup_stroke[0] or self.setup_stroke == "0"))\
+                 and ((self.jlpt in self.setup_jlpt) or (ALL in self.setup_jlpt)):
                     self.on_reading = self.get_data_kanji["readings_on"]
                     self.kun_reading = self.get_data_kanji["readings_kun"]
                     self.meaning = self.get_data_kanji["meanings"]
                     self.kanji_data = [self.get_kanji, self.on_reading, self.kun_reading, self.jlpt, self.meaning]
                     pick = False
+
 
             old_number.append(self.rand_choice)
 
@@ -369,6 +384,12 @@ class GUI():
         self._kunyomi = bool(kun_get in self.kanji_data[2])
         self._imi = bool(imi_get.capitalize() in self.kanji_data[4])
 
+        print(len(self.kanji_data[1]), len(self.kanji_data[1]))
+        if self.kanji_data[2] == []:
+            self._kunyomi = True
+        elif self.kanji_data[1] == []:
+            self._onyomi = True
+
         if self._onyomi and self._kunyomi and self._imi:
             self.counter += 1
             self.counter_label.configure(text=f"{self.counter}/{self.FIX_N}")
@@ -382,22 +403,128 @@ class GUI():
     def options(self, *args):
         #Pause Timer and disable option
         self.timer.destroy()
-        self._options = False
+        self._options, self._skip = False, False
         self.option.update()
+        self.kakunin_btn.config(state="disabled")
+
+        self.skip_kanji.bind('<Button-1>', None)
+        self.skip_kanji.update()
+        self.option.bind('<Button-1>', None)
+        self.option.update()
+        self.kakunin_btn.config(state="disabled")
 
         self.option_pane = Toplevel(self.window)
         self.option_pane.protocol("WM_DELETE_WINDOW", self.__callback)
         self.option_pane.configure(bg="#000080")
+        self.option_pane.resizable(False, False)
+        self.option_pane.protocol("WM_DELETE_WINDOW", self.__callback)
 
+        Label(self.option_pane, text="OPTION",font="Times 10 bold").grid(row = 0, column = 1, sticky = W, pady = 5)
+        label_frame = Frame(self.option_pane)
+        entry_frame = Frame(self.option_pane)
+
+        Label(label_frame, text="Kanji Count",font="Times 20 bold").grid(row = 1, column = 0, sticky = W, pady = 2)
+        kanji_count = Entry(entry_frame, textvariable=0)
+        kanji_count.grid(row = 1, column = 1, sticky = W, pady = 3,ipady=5,ipadx=5)
+
+
+        Label(label_frame, text="JLPT",font="Times 20 bold").grid(row = 2, column = 0, sticky = W, pady = 2)
+        cbVariables=[0,0,0,0,0,0]
+        jlpt_frame = Frame(entry_frame)
+
+        for k in range(6):
+            cbVariables[k] = IntVar()
+            if k == 5:
+                Checkbutton(jlpt_frame, text=f"ALL",variable=cbVariables[k]).grid(row = 0, column = k, sticky = W, pady = 2)
+            else:
+                Checkbutton(jlpt_frame, text=f"N{k+1}",variable=cbVariables[k]).grid(row = 0, column = k, sticky = W, pady = 2)
+
+        jlpt_frame.grid(row = 2, column = 3, sticky = W, pady = 5)
+
+        Label(label_frame, text="Stroke",font="Times 20 bold").grid(row = 3, column = 0, sticky = W, pady = 2)
+        stroke_entry1 = Entry(entry_frame)
+        stroke_entry1.grid(row = 3, column = 1, sticky = W, pady = 3,ipady=5,ipadx=5)
+        Label(entry_frame, text="~").grid(row = 3, column = 2, sticky = W, ipady = 2,ipadx=5)
+        stroke_entry2 = Entry(entry_frame,state="disabled")
+        stroke_entry2.grid(row = 3, column = 3, sticky = W, pady = 3,ipady=5,ipadx=5)
+
+        label_frame.grid(row = 1, column = 0, sticky = W, pady = 5)
+        entry_frame.grid(row = 1, column = 2, sticky = W, pady = 5,ipady=5,ipadx=5)
+
+
+        def check_number(*args):
+            if not str(kanji_count.get()).isnumeric():
+                kanji_count.delete(0, 'end')
+            if not str(stroke_entry1.get()).isnumeric():
+                stroke_entry1.delete(0, 'end')
+            if str(stroke_entry1.get()) == "":
+                stroke_entry2.config(state="disabled")
+            else:
+                stroke_entry2.config(state="normal")
+            if not str(stroke_entry2.get()).isnumeric():
+                stroke_entry2.delete(0, 'end')
+
+        kanji_count.bind("<KeyRelease>", check_number)
+        stroke_entry1.bind("<KeyRelease>", check_number)
+        stroke_entry2.bind("<KeyRelease>", check_number)
         #exit Button
         def optionsExit():
+            self.kanji_config
+            #JLPT
+            jlpt_set = ""
+            translate_var = []
+            for i in range(len(cbVariables)):
+                translate_var.append(cbVariables[i].get())
+
+            if 1 in translate_var:
+                if translate_var[5] == 1:
+                    jlpt_set = "ALL,ALL"
+                else:
+                    for j in range(len(translate_var)-1):
+                        if translate_var[j] == 1:
+                            jlpt_set += f"n{j+1},"
+
+                self.kanji_config["jlpt"] = jlpt_set
+                self.setup_jlpt = [k for k in jlpt_set.split(",")]
+
+
+            #NUMBER OF Kanji
+            if kanji_count.get() != "":
+                self.kanji_config["mainichi_count"] = kanji_count.get()
+                self.FIX_N = kanji_count.get()
+                self.counter_label.configure(text=f"{self.counter}/{self.FIX_N}")
+                self.counter = 1
+
+            #STROKE
+            if stroke_entry1.get() != "":
+                stroke_range = ""
+                if str(stroke_entry2.get()) == "":
+                    stroke_range = str(stroke_entry1.get()) + ",0"
+
+                else:
+                    stroke_range = str(stroke_entry1.get()) + "," + str(stroke_entry2.get())
+
+                self.kanji_config["strokes"] = stroke_range
+                self.setup_stroke = [k for k in stroke_range.split(",")]
+
+
+            with open('config.ini', 'w') as conf:
+                self.config.write(conf)
+                conf.close()
+
+            self._options, self._skip = True, True
+            self.kakunin_btn.config(state="normal")
+            self.on_entry.delete(0, 'end')
+            self.kun_entry.delete(0, 'end')
+            self.imi_entry.delete(0, 'end')
+
             self.timer_func()
             self._options = True
             self.option_pane.destroy()
 
-        Button(master=self.option_pane,text="EXIT", borderwidth=0, highlightthickness=0, command=optionsExit, relief="flat").pack()
+        Button(master=self.option_pane,text="EXIT",font="Times 12 bold", borderwidth=0, highlightthickness=0, command=optionsExit, relief="flat").grid(row = 4, column = 2, sticky = W, pady = 2)
 
-        print(self.repeat_count, self.setup_jlpt, self.jlpt)
+        # print(self.FIX_N, self.setup_jlpt, self.jlpt)
         # with open('config.ini', 'w') as conf:
         #     self.config.write(conf)
         #     conf.close()
