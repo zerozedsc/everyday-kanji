@@ -30,8 +30,8 @@ For sharing this json set of kanji.
 	
 	- you can change it based on how you want
 	- if you want random strokes, please keep the value at 0
-	- for now, you cannot take a range as value for strokes (**Coming Soon**)
-	- The kanji will always generate by jlpt level only for now (**Coming soon, you can choose to study all the kanji**)
+	- for now, you can put a range as value for strokes (**Done**)
+	- generated kanji can be organize by jlpt level (**Done**)
 	- no word examples(**Coming Soon**)
 
 -And for your infomation, generated kanji always random based on jlpt and strokes
@@ -39,10 +39,11 @@ For sharing this json set of kanji.
 ## Still Need An Update
 
  - [ ] **Organize kanji by learned and not**
- - [ ] **Can put a range of value for strokes picker**
+ - [DONE] **Can choose range for strokes, jlpt and number of kanji per session**
  - [ ] **Star and Favourite feature for kanji**
  - [ ] **Study Mode**
  - [ ] **word examples**
+ - [ ] **Make A pyinstaller instruction and icon **
 **AND MORE**
 
 ***I will always update this app in the future. For any trouble or suggestion, please share with me
