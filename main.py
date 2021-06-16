@@ -137,13 +137,12 @@ class GUI():
             self.run_check.start()
 
         splash = Toplevel(self.window)
-        txt_intro = f'''WELCOME TO MAINICHI KANJI KAKUNIN,
-This app is for who having a problem and want to find a way to memorize kanji.
-THIS APP STILL IN DEVELOPING,
-SO A LOT OF PROBLEM WILL OCCUR.
-Feel Free to contact me for some improvement or issue for me to fix it.
-楽しみ練習しましょう。。頑張れ'''
-        Label(master=splash, text=txt_intro, bg="#3A7FF6",fg="white",font=("Arial-BoldMT",int(15.5))).grid()
+        def txt():
+            return'''WELCOME TO MAINICHI KANJI KAKUNIN,\nThis app is for who having a problem and want to find a way to memorize kanji.\nTHIS APP STILL IN DEVELOPING,
+            \nSO A LOT OF PROBLEM WILL OCCUR.\nFeel Free to contact me for some improvement or issue for me to fix it.
+            楽しみ練習しましょう。。頑張れ'''
+
+        Label(master=splash, text=txt(), bg="#3A7FF6",fg="white",font=("Arial-BoldMT",int(15.5))).grid()
 
         splash.after(5000, lambda:splash.destroy())
 
@@ -354,7 +353,7 @@ Feel Free to contact me for some improvement or issue for me to fix it.
                 # print(f"{self.jlpt},{self.setup_jlpt} >{(self.jlpt in self.setup_jlpt) or (ALL in self.setup_jlpt)}")
 
                 if ((self.setup_stroke[1] != 0) and (int(self.stroke) in range(int(self.setup_stroke[0]),int(self.setup_stroke[1]))) or \
-                (self.stroke == self.setup_stroke[0] or self.setup_stroke == "0"))\
+                ("0" == self.setup_stroke[0] or self.stroke == self.setup_stroke[0]))\
                  and ((self.jlpt in self.setup_jlpt) or (ALL in self.setup_jlpt)):
                     self.on_reading = self.get_data_kanji["readings_on"]
                     self.kun_reading = self.get_data_kanji["readings_kun"]
@@ -417,7 +416,7 @@ Feel Free to contact me for some improvement or issue for me to fix it.
         self.option_pane.protocol("WM_DELETE_WINDOW", self.__callback)
         self.option_pane.configure(bg="#000080")
         self.option_pane.resizable(False, False)
-        self.option_pane.protocol("WM_DELETE_WINDOW", self.__callback)
+
 
         Label(self.option_pane, text="OPTION",font="Times 10 bold").grid(row = 0, column = 1, sticky = W, pady = 5)
         label_frame = Frame(self.option_pane)
