@@ -1,13 +1,26 @@
 from tkinter import *
 from tkinter import filedialog,messagebox,font
 from configparser import ConfigParser
-import json, random, os, time, threading, sys, wmi
+import json, random, os, time, threading, sys, wmi, re
 import getpass, traceback, pythoncom
 
-DEBUG = False
+DEBUG = True
 USER_NAME = getpass.getuser()
+config = ConfigParser()
 
-class GUI():
+def WindowManager(window):
+    config.read("config.ini")
+    get_PID = os.getpid()
+    run_config = config["Run"]
+    run_config["PID"] = str(get_PID)
+    run_config["window"] = str(window)
+    with open('config.ini', 'w') as conf:
+        config.write(conf)
+        conf.close()
+
+
+class MAIN_GUI():
+    # WINDOW = MAIN
     def __init__(self, master):
         self.window = master
         self.window.title("Mainichi Kanji Kakunin")
@@ -32,7 +45,7 @@ class GUI():
         self.kanji = list(self.test_load.keys())
 
         #Config file
-        self.config = ConfigParser()
+        self.config = config
         self.config.read("config.ini")
         self.kanji_config = self.config["Option"]
         self.FIX_N = self.kanji_config["mainichi_count"]
@@ -121,15 +134,6 @@ class GUI():
         return
 
     def splashScreen(self):
-        #GET APP PID (NOT USE)
-        get_PID = os.getpid()
-        self.run_config = self.config["Run"]
-        self.run_config["PID"] = str(get_PID)
-        self.run_config["run"] = str(True)
-        with open('config.ini', 'w') as conf:
-            self.config.write(conf)
-            conf.close()
-
         #Instruction Window
         #RUN TERMINATING SCRIPT
         if not DEBUG:
@@ -144,6 +148,7 @@ class GUI():
 
         Label(master=splash, text=txt(), bg="#3A7FF6",fg="white",font=("Arial-BoldMT",int(15.5))).grid()
 
+        splash.focus_force()
         splash.after(5000, lambda:splash.destroy())
 
     def timer_func(self):
@@ -301,6 +306,9 @@ class GUI():
 
     def kanjiGenerate(self, *args):
         self._onyomi, self._kunyomi, self._imi = False, False, False
+        self.on_entry.config(state="normal")
+        self.kun_entry.config(state="normal")
+        self.imi_entry.config(state="normal")
         #CHECK IF N IS true
         if int(self.counter) > int(self.FIX_N):
             # run_config not use
@@ -313,8 +321,8 @@ class GUI():
                 messagebox.showinfo("Nice", "You have done fukushu for kanji. Ganbattane")
                 self._run = False
                 self.run_check.join()
+                WindowManager("CLOSE")
                 self.window.destroy()
-                sys.exit()
             except Exception as e:
                 print(e)
 
@@ -351,13 +359,32 @@ class GUI():
                 self.stroke = str(self.get_data_kanji["strokes"])
                 self.jlpt = "n" + str(self.get_data_kanji["jlpt_new"])
                 # print(f"{self.jlpt},{self.setup_jlpt} >{(self.jlpt in self.setup_jlpt) or (ALL in self.setup_jlpt)}")
+                reading_on,reading_kun,meaning  = [],[],[]
+                punctuations = '''!()-[]{};:'"\,<>./?@#$%^&*_~'''
+                for j in self.get_data_kanji["readings_on"]:
+                    j = re.sub(r'[^\w\s]','',j)
+                    reading_on.append(j)
+                for k in self.get_data_kanji["readings_kun"]:
+                    k = re.sub(r'[^\w\s]','',k)
+                    reading_kun.append(k)
+                for l in self.get_data_kanji["meanings"]:
+                    l = re.sub(r'[^\w\s]',' ',l)
+                    meaning.append(l)
+
+
 
                 if ((self.setup_stroke[1] != 0) and (int(self.stroke) in range(int(self.setup_stroke[0]),int(self.setup_stroke[1]))) or \
                 ("0" == self.setup_stroke[0] or self.stroke == self.setup_stroke[0]))\
                  and ((self.jlpt in self.setup_jlpt) or (ALL in self.setup_jlpt)):
-                    self.on_reading = self.get_data_kanji["readings_on"]
-                    self.kun_reading = self.get_data_kanji["readings_kun"]
-                    self.meaning = self.get_data_kanji["meanings"]
+                    self.on_reading = reading_on
+                    if self.on_reading == []:
+                        self.on_entry.config(state="disabled")
+                    self.kun_reading = reading_kun
+                    if self.kun_reading == []:
+                        self.kun_entry.config(state="disabled")
+                    self.meaning = meaning
+                    if self.meaning == []:
+                        self.imi_entry.config(state="disabled")
                     self.kanji_data = [self.get_kanji, self.on_reading, self.kun_reading, self.jlpt, self.meaning]
                     pick = False
 
@@ -396,8 +423,8 @@ class GUI():
             self.showInfoKanji()
         else:
             messagebox.showerror("Wrong", "Wrong answer")
-            self.get_timer = "GOT WRONG"
-            self.showInfoKanji()
+            self.get_timer = "WRONG"
+            self.showInfoKanji()    #check True or False
 
     def options(self, *args):
         #Pause Timer and disable option
@@ -603,11 +630,44 @@ class GUI():
         #NEXT TIME MAYBE I WILL CONSIDER PUT IN REG
         #FOR NOW JUST IN STARTUP FOLDER
 
+class LEARN_GUI():
+    # WINDOW = LEARN
+    def __init__(self, master):
+        self.window = master
+        self.window.title("Mainichi Kanji Kakunin")
+        self.window.geometry("862x519")
+        self.window.configure(bg="#3A7FF6")
+        self.window.resizable(False, False)
+
+
+        self.window.mainloop()
+
 
 if __name__ == "__main__":
     try:
-        window = Tk()
-        GUI(window)
+        #WindowManager
+        process = True
+        while process:
+            window = Tk()
+            config.read("config.ini")
+            run_config = config["Run"]
+            window_get = str(run_config["window"])
+            if window_get == "MAIN":
+                MAIN_GUI(window)
+            elif window_get == "LEARN":
+                LEARN_GUI(window)
+            else:
+                run_config["window"] = "MAIN"
+                with open('config.ini', 'w') as conf:
+                    config.write(conf)
+                    conf.close()
+                print("close")
+                process = False
+                sys.exit()
+
     except Exception as e:
-        with open("ERROR LOG.txt", "w") as log:
-            log.write(f"{e}\n{traceback.format_exc()}")
+        if not DEBUG:
+            with open("ERROR LOG.txt", "a") as log:
+                log.write(f"{e}\n{traceback.format_exc()}\n")
+        else:
+            print(f"{e}\n{traceback.format_exc()}\n")

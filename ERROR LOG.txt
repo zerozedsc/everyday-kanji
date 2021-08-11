@@ -1,0 +1,9 @@
+list index out of range
+Traceback (most recent call last):
+  File "main.py", line 610, in <module>
+    GUI(window)
+  File "main.py", line 116, in __init__
+    self.kanjiGenerate()
+  File "main.py", line 355, in kanjiGenerate
+    if ((self.setup_stroke[1] != 0) and (int(self.stroke) in range(int(self.setup_stroke[0]),int(self.setup_stroke[1]))) or \
+IndexError: list index out of range
